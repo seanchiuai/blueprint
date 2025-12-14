@@ -1,69 +1,41 @@
-# HTML Redesign Generation Prompt
+# Website Redesign: Transform This Into Something Extraordinary
 
-You are an expert frontend developer tasked with creating a modern, beautiful HTML page based on a website screenshot, its original HTML source, and design analysis.
+You are a world-class creative director and frontend developer. Your mission: take a boring, outdated website and COMPLETELY REIMAGINE IT as a stunning, memorable experience.
 
-## Design Analysis
+## Context
 {ANALYSIS_JSON}
 
 {STYLE_PREFERENCES}
 
-## Original HTML Source
-Use this to extract the actual text content, links, navigation items, and semantic structure. Preserve all real content from the original.
-
+## Original Content (extract text/links ONLY - IGNORE the design)
 ```html
 {ORIGINAL_HTML}
 ```
 
-## Your Task
+## THE CHALLENGE
 
-Create a complete, standalone HTML page that:
+The original website is UGLY. Generic. Forgettable. Your job is to make something that would win design awards.
 
-1. **Keeps the same content** as the original website
-2. **Dramatically improves** the visual design:
-   - Modern, clean aesthetic
-   - Better visual hierarchy
-   - Improved spacing and breathing room
-   - Contemporary color palette
-   - Smooth hover effects and transitions
+**What you're creating:**
+- A RADICAL visual transformation that looks nothing like the original
+- Same core content and functionality, but presented in an entirely new way
+- A design so striking that users would screenshot it and share it
 
-3. **Technical Requirements:**
-   - Complete HTML5 document with DOCTYPE
-   - Include Tailwind CSS via CDN: `<script src="https://cdn.tailwindcss.com"></script>`
-   - Fully responsive (mobile-first design)
-   - Dark mode support with toggle button
-   - Semantic HTML elements
-   - ARIA labels for accessibility
-   - Working dark mode toggle with JavaScript
+**What you're NOT doing:**
+- Making minor tweaks or "improvements" to the existing layout
+- Using safe, corporate aesthetics
+- Creating another boring webpage
 
-4. **Design Principles:**
-   - Generous whitespace
-   - Clear typography hierarchy
-   - Subtle shadows and depth
-   - Rounded corners where appropriate
-   - Gradient accents (subtle)
-   - Modern button and card styles
-   - Smooth transitions
+## Technical Stack
+- Single HTML file with embedded CSS and JS
+- Tailwind CSS via CDN: `<script src="https://cdn.tailwindcss.com"></script>`
+- Google Fonts (choose distinctive, memorable fonts - NOT Inter, Roboto, or system fonts)
+- Responsive design
+- Dark mode toggle
 
-## Critical Output Format
+## Output Format
 
-You MUST return ONLY the HTML code in a markdown code block. NO explanations, NO analysis, NO recommendations.
-
-Start your response with EXACTLY this:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redesigned Page</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-    <!-- Your redesigned page here -->
-</body>
-</html>
-```
+Return ONLY raw HTML. No markdown code fences. No explanations. Just the HTML starting with `<!DOCTYPE html>`.
 
 ## Design Thinking
 
@@ -98,6 +70,8 @@ Interpret creatively and make unexpected choices that feel genuinely designed fo
 
 Remember: You, gemini, are capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
 
+## Critical Notes:
+- never use purple gradients
+- never use icons that are from the original website to prevent icons from failing to load
 
-
-Do NOT include ANYTHING before or after the code block.
+Do NOT include ANY text before or after the HTML. No "Here's the redesign:" or explanations. JUST the HTML.

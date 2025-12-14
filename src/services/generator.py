@@ -109,20 +109,150 @@ Please incorporate these preferences into the redesign. Priority should be given
             ),
         )
 
+        # Log response metadata for debugging
+        self.logger.info("Gemini response received")
+        if response.candidates:
+            self.logger.info(
+                f"Response finish_reason: {response.candidates[0].finish_reason}"
+            )
+            if response.candidates[0].finish_reason == "MAX_TOKENS":
+                self.logger.error("Response was TRUNCATED due to max_tokens limit!")
+
+        # Log response preview for debugging
+        response_text = response.text
+        self.logger.info(
+            f"Response preview (first 300 chars): {response_text[:300]}"
+        )
+        self.logger.info(f"Response preview (last 200 chars): {response_text[-200:]}")
+        self.logger.info(f"Total response length: {len(response_text)} characters")
+
         # Extract HTML code from response
-        html_code = self._extract_code(response.text)
+        html_code = self._extract_code(response_text)
+
+        # Final validation
+        if not html_code or len(html_code) < 100:
+            self.logger.error(
+                f"Extracted HTML is suspiciously short: {len(html_code)} chars"
+            )
+            raise ValueError(
+                f"Generated HTML is invalid or too short ({len(html_code)} chars)"
+            )
+
         self.logger.info("HTML redesign generation complete")
         return html_code
 
     def _extract_code(self, response_text: str) -> str:
-        """Extract HTML code from markdown code blocks."""
-        # Match ```tsx or ```typescript or ``` code blocks
-        pattern = r"```(?:html)?\n([\s\S]*?)```"
-        matches = re.findall(pattern, response_text)
+        """
+        Extract HTML code from markdown code blocks with robust fallback strategies.
+        """
+        self.logger.info(f"Extracting HTML from response ({len(response_text)} chars)")
 
-        if matches:
-            return matches[0].strip()
+        # STRATEGY 0: Direct cleanup - most reliable approach
+        # Simply strip markdown code block markers from start and end
+        cleaned = response_text.strip()
 
-        # If no code block found, return the whole response
+        # Remove opening code fence: ```html, ```HTML, or just ```
+        # Handle: ```html\n, ```html , ```html<!DOCTYPE, etc.
+        cleaned = re.sub(r"^```(?:html|HTML)?\s*", "", cleaned, flags=re.IGNORECASE)
+
+        # Remove closing code fence: ``` at the end (with optional whitespace)
+        cleaned = re.sub(r"\s*```\s*$", "", cleaned)
+
+        # Also handle case where there might be text after closing ```
+        # Find last occurrence of ``` and remove everything from there if it looks like end marker
+        last_fence_match = re.search(r"\n```\s*(?:\n.*)?$", cleaned)
+        if last_fence_match:
+            cleaned = cleaned[: last_fence_match.start()]
+
+        cleaned = cleaned.strip()
+
+        if cleaned and self._validate_html(cleaned):
+            self.logger.info(
+                f"Strategy 0 (direct cleanup) succeeded: {len(cleaned)} chars"
+            )
+            return cleaned
+
+        # STRATEGY 1: Regex pattern matching for well-formed code blocks
+        patterns = [
+            r"```html\s*\n([\s\S]*?)```",  # ```html\n with newline
+            r"```html\s+([\s\S]*?)```",  # ```html with space(s)
+            r"```html([\s\S]*?)```",  # ```html with no separator
+            r"```\s*\n([\s\S]*?)```",  # ``` with newline (no lang tag)
+            r"```([\s\S]*?)```",  # ``` with anything
+        ]
+
+        for i, pattern in enumerate(patterns, 1):
+            matches = re.findall(pattern, response_text, re.IGNORECASE)
+            if matches:
+                extracted = matches[0].strip()
+                self.logger.info(f"Pattern {i} matched: {len(extracted)} chars")
+
+                if self._validate_html(extracted):
+                    self.logger.info(f"Strategy 1 pattern {i} succeeded")
+                    return extracted
+
+        # STRATEGY 2: Handle truncated responses (no closing ```)
+        if "```" in response_text:
+            self.logger.warning("Trying truncated response extraction")
+            # Find opening fence and take everything after it
+            opening_match = re.search(r"```(?:html|HTML)?\s*", response_text)
+            if opening_match:
+                partial = response_text[opening_match.end() :].strip()
+                # Remove any trailing ``` if present
+                partial = re.sub(r"\s*```\s*$", "", partial).strip()
+                if self._validate_html(partial):
+                    self.logger.info(
+                        f"Strategy 2 (truncated) succeeded: {len(partial)} chars"
+                    )
+                    return partial
+
+        # STRATEGY 3: Response is raw HTML without code fences
+        if response_text.strip().lower().startswith(
+            "<!doctype"
+        ) or response_text.strip().lower().startswith("<html"):
+            self.logger.info("Strategy 3: Response is raw HTML")
+            return response_text.strip()
+
+        # FINAL FALLBACK: Return cleaned version even if validation failed
+        # This ensures we at least try to show something
+        self.logger.error(f"All strategies failed! Response preview: {response_text[:300]}")
+
+        # Last attempt: just return whatever we cleaned, validation be damned
+        if cleaned and "<!doctype" in cleaned.lower():
+            self.logger.warning("Returning cleaned response despite validation failure")
+            return cleaned
+
         return response_text.strip()
+
+    def _validate_html(self, code: str) -> bool:
+        """
+        Validate that extracted code looks like valid HTML.
+        Simple validation: must look like HTML and not have markdown fences.
+        """
+        if not code or len(code) < 50:
+            return False
+
+        code_stripped = code.strip()
+        code_lower = code_stripped.lower()
+
+        # Must NOT start with markdown code fence
+        if code_stripped.startswith("```"):
+            self.logger.warning("Validation failed: starts with code fence")
+            return False
+
+        # Should contain HTML markers
+        has_doctype = "<!doctype" in code_lower
+        has_html_tag = "<html" in code_lower
+
+        # At minimum, should have doctype or html tag
+        if not (has_doctype or has_html_tag):
+            self.logger.warning("Validation failed: no DOCTYPE or html tag found")
+            return False
+
+        # Should not have code fences anywhere prominent
+        if code_lower.startswith("html\n") or code_lower.startswith("html "):
+            self.logger.warning("Validation failed: starts with 'html' language tag")
+            return False
+
+        return True
 
