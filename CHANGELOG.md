@@ -14,8 +14,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Component library integration (shadcn/ui, Radix)
 - Style presets ("minimal", "playful", "corporate")
 - Iterative refinement based on user feedback
-- A/B comparison view
 - Export options (Next.js page, standalone HTML, Figma tokens)
+- Download generated HTML button
+- Copy to clipboard for code
+
+---
+
+## [0.3.0] - 2025-12-13
+
+### Added
+- **Frontend Interface** (`index.html`)
+  - Complete web UI with brutalist/technical design aesthetic
+  - Real-time pipeline visualization with 4 stages
+  - Live system metrics (nodes processed, tokens, GPU, accuracy)
+  - Terminal-style log output for debugging
+  - Data visualization with animated bars
+  - Fully responsive design with mobile support
+
+- **API Integration**
+  - Frontend connects to backend via `http://localhost:8000/api/redesign`
+  - Real API calls replace simulated execution
+  - Displays actual screenshot from backend (base64 PNG)
+  - Shows live preview of generated HTML in iframe
+  - Parses and displays design analysis data
+
+- **Results Display**
+  - Side-by-side comparison: original screenshot vs generated HTML
+  - Syntax-highlighted code block for generated HTML
+  - Live preview renders HTML in isolated iframe
+  - Session statistics tracking (processed count, avg time)
+
+- **User Experience**
+  - Pre-filled with example URL (https://wikipedia.org)
+  - Visual progress indicators for each pipeline stage
+  - Error handling with user-friendly messages
+  - Processing state with animated button
+  - Automatic scroll-to-results on completion
+
+### Technical Details
+- Frontend: Vanilla JavaScript, custom CSS with grid layout
+- Typography: Bebas Neue (headers), Archivo (body), Space Mono (code)
+- Color scheme: Black (#0A0A0A), White (#FAFAFA), Accent (#FF6600)
+- Grid overlay with 20px spacing for visual alignment
+- Metrics update every 600ms during processing
+- Backend runs on localhost:8000 with CORS enabled
+
+### Fixed
+- Backend startup: Changed from `python src/main.py` to `python -m uvicorn src.main:app`
+- Module import errors resolved by using uvicorn module mode
 
 ---
 

@@ -2,12 +2,13 @@
 
 ## Overview
 
-A backend-focused application that takes a screenshot of a user-provided website, analyzes the landing page design, and generates a "10x better" redesigned version in TSX using AI.
+A full-stack application that takes a screenshot of a user-provided website, analyzes the landing page design, and generates a "10x better" redesigned version in standalone HTML using AI.
 
 **Tech Stack:**
-- **Cua (C/UA)** - Computer-Using Agent framework for sandboxed browser automation and screenshots
+- **Playwright** - Local headless browser automation for screenshots (replaced Cua)
 - **Google Gemini** - Vision + code generation for redesign
-- **Node.js/Python** - Backend API
+- **Python/FastAPI** - Backend API
+- **Vanilla JavaScript** - Frontend interface with brutalist design
 
 ---
 
@@ -18,11 +19,11 @@ A backend-focused application that takes a screenshot of a user-provided website
 | Phase | Status | Started | Completed | Notes |
 |-------|--------|---------|-----------|-------|
 | Phase 1: Project Setup | ✅ Complete | 2024-12-13 | 2024-12-13 | Dependencies and env configured |
-| Phase 2: Screenshot Service | 🔄 In Progress | - | - | Cua integration pending |
-| Phase 3: Design Analysis | ⏳ Not Started | - | - | - |
-| Phase 4: TSX Generator | ⏳ Not Started | - | - | - |
-| Phase 5: API Layer | 🔄 In Progress | 2024-12-13 | - | Routes defined, testing needed |
-| Phase 6: Testing & Deployment | ⏳ Not Started | - | - | - |
+| Phase 2: Screenshot Service | ✅ Complete | 2024-12-13 | 2024-12-13 | Playwright integration complete |
+| Phase 3: Design Analysis | ✅ Complete | 2024-12-13 | 2024-12-13 | Gemini Vision analysis working |
+| Phase 4: HTML Generator | ✅ Complete | 2024-12-13 | 2024-12-13 | HTML generation (changed from TSX) |
+| Phase 5: API Layer | ✅ Complete | 2024-12-13 | 2024-12-13 | All endpoints functional |
+| Phase 6: Frontend Interface | ✅ Complete | 2024-12-13 | 2024-12-13 | Web UI with live preview |
 
 ### Status Legend
 - ✅ Complete
@@ -51,25 +52,32 @@ When adding new errors, use the following format:
 ## Implementation Notes
 
 ### Key Decisions
-- Using Cua ComputerAgent instead of Playwright for browser automation (sandboxed, AI-driven)
-- Using Gemini 2.0 Flash for both vision analysis and code generation
-- Viewport-only screenshots (full-page requires different approach)
-- Single-file TSX component output for simplicity
+- **Changed to Playwright** from Cua for faster, local browser automation
+- Using **Gemini 2.0 Flash** for both vision analysis and code generation
+- **Full-page screenshots** available via Playwright
+- **Standalone HTML** output instead of TSX for universal compatibility
+- **Brutalist/technical design** for frontend aesthetic
+- **No build tools required** - HTML runs directly in browser
 
 ### Known Limitations
-- Screenshots are viewport-only (no true full-page capture without browser automation libraries)
-- Cua requires cloud sandbox container
-- Generated TSX assumes React + Tailwind CSS setup
+- HTTPS-only URLs required (security restriction)
+- Private/internal IPs blocked (SSRF protection)
+- Screenshot resolution: 2880x1800 (1440x900 @ 2x scale)
+- Generation time: ~15-20 seconds per website
+- Gemini API rate limits apply
 
 ### Testing Checklist
-- [ ] Environment variables configured (.env file)
-- [ ] Virtual environment activated
-- [ ] Dependencies installed
-- [ ] Server starts without errors
-- [ ] Health endpoint responds
-- [ ] Screenshot service connects to Cua
-- [ ] Gemini API key validated
-- [ ] Full redesign pipeline works end-to-end
+- [x] Environment variables configured (.env file)
+- [x] Virtual environment activated
+- [x] Dependencies installed (including Playwright + Chromium)
+- [x] Server starts without errors
+- [x] Health endpoint responds (`/api/health`)
+- [x] Screenshot service captures with Playwright
+- [x] Gemini API key validated
+- [x] Full redesign pipeline works end-to-end
+- [x] Frontend connects to backend API
+- [x] Live preview displays generated HTML
+- [x] Side-by-side comparison works
 
 ---
 
@@ -77,17 +85,17 @@ When adding new errors, use the following format:
 
 Before proceeding to the next phase, each checkpoint must be verified and working.
 
-### Checkpoint 1: Screenshot Transfer (Cua → Backend)
-**Goal:** Successfully capture and transfer screenshots from Cua sandbox to the backend.
+### Checkpoint 1: Screenshot Transfer (Playwright → Backend)
+**Goal:** Successfully capture and transfer screenshots from Playwright to the backend.
 
 | Task | Description | Verification |
 |------|-------------|--------------|
-| 1.1 | Set up Cua Cloud connection | Can connect to sandbox without errors |
-| 1.2 | Initialize ComputerAgent | Agent created with browser model |
-| 1.3 | Navigate to test URL | Agent opens browser and loads page |
+| 1.1 | Install Playwright + Chromium | Browser installed successfully |
+| 1.2 | Initialize Playwright browser | Browser launches in headless mode |
+| 1.3 | Navigate to test URL | Page loads and waits for networkidle |
 | 1.4 | Capture viewport screenshot | Returns valid base64 PNG data |
-| 1.5 | Capture scrolled screenshot | Returns valid base64 PNG data |
-| 1.6 | Transfer to backend | Screenshots saved/accessible in backend memory |
+| 1.5 | Capture full-page screenshot | Returns valid base64 PNG data |
+| 1.6 | Transfer to backend | Screenshots encoded and returned |
 
 **Test Command:**
 ```bash
@@ -98,21 +106,22 @@ curl -X POST http://localhost:8000/api/screenshot \
 ```
 
 **Success Criteria:**
-- [ ] Screenshots are captured without timeout
-- [ ] Base64 data can be decoded back to valid PNG
-- [ ] Both viewport and full-page screenshots are distinct
+- [x] Screenshots are captured without timeout
+- [x] Base64 data can be decoded back to valid PNG
+- [x] Both viewport and full-page screenshots are distinct
+- [x] Resolution: 2880x1800 (1440x900 @ 2x scale factor)
 
 ---
 
 ### Checkpoint 2: Redesign Generation (Gemini)
-**Goal:** Generate a complete, valid TSX component from the screenshot.
+**Goal:** Generate a complete, valid HTML page from the screenshot.
 
 | Task | Description | Verification |
 |------|-------------|--------------|
 | 2.1 | Connect to Gemini API | API key validated, model accessible |
 | 2.2 | Send screenshot to Gemini Vision | No errors, receives response |
 | 2.3 | Parse design analysis | Valid JSON with all required fields |
-| 2.4 | Generate TSX code | Returns syntactically valid TSX |
+| 2.4 | Generate HTML code | Returns complete HTML5 document |
 | 2.5 | Extract code from response | Code block properly parsed |
 
 **Test Command:**
@@ -120,28 +129,29 @@ curl -X POST http://localhost:8000/api/screenshot \
 curl -X POST http://localhost:8000/api/redesign \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com"}'
-# Should return: { "tsx_code": "import React...", "analysis": {...} }
+# Should return: { "html_code": "<!DOCTYPE html>...", "analysis": {...} }
 ```
 
 **Success Criteria:**
-- [ ] Gemini returns structured analysis JSON
-- [ ] TSX code includes all required imports
-- [ ] TSX code uses Tailwind CSS classes
-- [ ] TSX code compiles without TypeScript errors
-- [ ] Component is self-contained and exportable
+- [x] Gemini returns structured analysis JSON (7 sections)
+- [x] HTML code includes DOCTYPE and complete structure
+- [x] HTML uses Tailwind CSS via CDN
+- [x] HTML includes dark mode toggle with JavaScript
+- [x] HTML is standalone and runs without build tools
+- [x] Response size: ~66KB with ~95 lines of HTML
 
 ---
 
 ### Checkpoint 3: User Display
-**Goal:** Present the redesigned component to the user in a viewable format.
+**Goal:** Present the redesigned HTML to the user via web interface.
 
 | Task | Description | Verification |
 |------|-------------|--------------|
-| 3.1 | Return TSX via API | Response includes formatted code |
-| 3.2 | Side-by-side comparison | Original screenshot + new code visible |
-| 3.3 | Code syntax highlighting | TSX is readable with proper formatting |
-| 3.4 | Copy-to-clipboard | User can copy the generated code |
-| 3.5 | Live preview (optional) | Render TSX in sandboxed iframe |
+| 3.1 | Return HTML via API | Response includes complete HTML |
+| 3.2 | Side-by-side comparison | Original screenshot + generated preview |
+| 3.3 | Code display | HTML shown in monospace code block |
+| 3.4 | Live preview | Render HTML in iframe |
+| 3.5 | Pipeline visualization | Real-time progress through 4 stages |
 
 **API Response Format:**
 ```json
@@ -151,19 +161,21 @@ curl -X POST http://localhost:8000/api/redesign \
   "analysis": {
     "color_palette": {...},
     "typography": {...},
+    "layout": {...},
     "improvements": [...]
   },
-  "tsx_code": "import React from 'react';\n\nexport default function LandingPage() {...}",
-  "preview_url": "/preview/abc123"  // optional: live preview link
+  "html_code": "<!DOCTYPE html>...",
 }
 ```
 
 **Success Criteria:**
-- [ ] API returns complete response with all fields
-- [ ] Screenshot is viewable as image
-- [ ] TSX code is properly escaped/formatted
-- [ ] User can copy and paste code into their project
-- [ ] (Optional) Live preview renders correctly
+- [x] API returns complete response with all fields
+- [x] Screenshot is viewable as base64 image
+- [x] HTML code is properly displayed
+- [x] User can copy code from code block
+- [x] Live preview renders HTML in iframe
+- [x] Frontend shows real-time pipeline progress
+- [x] Analysis data is parsed and displayed
 
 ---
 
@@ -171,25 +183,34 @@ curl -X POST http://localhost:8000/api/redesign \
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Backend API (Python/FastAPI)         │
+│                 Frontend (index.html)                   │
+│  • Brutalist design with grid overlay                   │
+│  • Real-time pipeline visualization                     │
+│  • Live HTML preview in iframe                          │
+│  • Side-by-side comparison view                         │
+└─────────────────┬───────────────────────────────────────┘
+                  │ fetch() POST /api/redesign
+                  ▼
+┌─────────────────────────────────────────────────────────┐
+│              Backend API (Python/FastAPI)               │
 ├─────────────────────────────────────────────────────────┤
 │  ┌─────────────┐   ┌─────────────┐   ┌───────────────┐  │
-│  │   Input     │ → │  Screenshot │ → │   Redesign    │  │
+│  │   Routes    │ → │  Screenshot │ → │   Redesign    │  │
 │  │   Handler   │   │   Service   │   │   Generator   │  │
 │  └─────────────┘   └─────────────┘   └───────────────┘  │
 │         │                │                   │          │
 │         ▼                ▼                   ▼          │
 │  ┌─────────────────────────────────────────────────────┐│
-│  │              Cua ComputerAgent                      ││
-│  │  • AI-driven browser control (no Playwright)        ││
-│  │  • Desktop screenshot capture                               ││
+│  │           Playwright (Local Browser)                ││
+│  │  • Chromium headless browser                        ││
+│  │  • Full-page screenshot capture (2880x1800)         ││
 │  └─────────────────────────────────────────────────────┘│
 │                          │                              │
 │                          ▼                              │
 │  ┌─────────────────────────────────────────────────────┐│
 │  │              Google Gemini API                      ││
 │  │  • Vision analysis of screenshots                   ││
-│  │  • TSX code generation                              ││
+│  │  • HTML code generation (not TSX)                   ││
 │  └─────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────┘
 ```
@@ -206,16 +227,20 @@ redesign/
 │   │   └── routes.py           # FastAPI routes
 │   ├── services/
 │   │   ├── __init__.py
-│   │   ├── screenshot.py       # Cua screenshot service
+│   │   ├── screenshot.py       # Playwright screenshot service
 │   │   ├── analyzer.py         # Design analysis with Gemini
-│   │   └── generator.py        # TSX generation with Gemini
-│   ├── config/
-│   │   ├── __init__.py
-│   │   └── settings.py         # Environment config
+│   │   └── generator.py        # HTML generation with Gemini
 │   └── main.py                 # Application entry point
+├── prompts/
+│   ├── analysis_prompt.md      # Gemini vision analysis prompt
+│   └── generation_prompt.md    # HTML generation prompt
+├── index.html                  # Frontend interface
+├── preview.html                # Preview template (optional)
 ├── requirements.txt
 ├── .env.example
 ├── .env
+├── CHANGELOG.md
+├── IMPLEMENTATION_PLAN.md
 └── README.md
 ```
 
@@ -709,15 +734,45 @@ cp .env.example .env
 ### 6.3 Run the Server
 
 ```bash
-python -m src.main
-# Or
-uvicorn src.main:app --reload
+# Using uvicorn (recommended)
+python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Note: Direct python execution may fail with module import errors
+# python src/main.py  # NOT RECOMMENDED
 ```
 
-### 6.4 Test the API
+### 6.4 Open the Frontend
 
 ```bash
+# Open the frontend in your default browser
+open index.html  # macOS
+# or
+start index.html  # Windows
+# or
+xdg-open index.html  # Linux
+```
+
+### 6.5 Test the API
+
+**Via Frontend:**
+1. Open `index.html` in your browser
+2. Enter a URL (default: https://wikipedia.org)
+3. Click "EXECUTE" button
+4. Watch the real-time pipeline progress
+5. View results: original screenshot, analysis, and generated HTML
+
+**Via Command Line:**
+```bash
+# Health check
+curl http://localhost:8000/api/health
+
+# Full redesign
 curl -X POST http://localhost:8000/api/redesign \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
+
+# Screenshot only
+curl -X POST http://localhost:8000/api/screenshot \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com"}'
 ```
