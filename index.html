@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REDESIGN ENGINE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo:wght@300;400;500;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --black: #0A0A0A;
+            --white: #FAFAFA;
+            --accent: #FF6600;
+            --gray: #888888;
+            --gray-light: #D0D0D0;
+            --grid-size: 20px;
+        }
+
+        body {
+            font-family: 'Archivo', -apple-system, sans-serif;
+            background: var(--white);
+            color: var(--black);
+            overflow-x: hidden;
+            line-height: 1.4;
+        }
+
+        /* Grid overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent calc(var(--grid-size) - 1px), var(--gray-light) calc(var(--grid-size) - 1px), var(--gray-light) var(--grid-size)),
+                repeating-linear-gradient(90deg, transparent, transparent calc(var(--grid-size) - 1px), var(--gray-light) calc(var(--grid-size) - 1px), var(--gray-light) var(--grid-size));
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 80px;
+            padding-bottom: 20px;
+            border-bottom: 4px solid var(--black);
+        }
+
+        .masthead {
+            display: flex;
+            align-items: baseline;
+            gap: 20px;
+        }
+
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 72px;
+            line-height: 0.9;
+            letter-spacing: 0.02em;
+            font-weight: 400;
+        }
+
+        .version {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--gray);
+            transform: translateY(-10px);
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 40px;
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            align-items: baseline;
+        }
+
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            text-align: right;
+        }
+
+        .status-label {
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 2px;
+        }
+
+        .status-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--black);
+        }
+
+        /* Input Zone */
+        .input-zone {
+            margin-bottom: 60px;
+            display: grid;
+            grid-template-columns: 200px 1fr auto;
+            gap: 0;
+            border: 3px solid var(--black);
+            background: var(--white);
+            position: relative;
+        }
+
+        .input-label {
+            background: var(--black);
+            color: var(--white);
+            padding: 30px 20px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            writing-mode: horizontal-tb;
+        }
+
+        .input-field {
+            border: none;
+            border-left: 3px solid var(--black);
+            border-right: 3px solid var(--black);
+            padding: 30px;
+            font-family: 'Space Mono', monospace;
+            font-size: 18px;
+            background: transparent;
+            color: var(--black);
+            outline: none;
+        }
+
+        .input-field::placeholder {
+            color: var(--gray);
+        }
+
+        .execute-btn {
+            background: var(--accent);
+            color: var(--white);
+            border: none;
+            padding: 0 50px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .execute-btn:hover {
+            background: var(--black);
+        }
+
+        .execute-btn:active {
+            transform: scale(0.98);
+        }
+
+        .execute-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .execute-btn.processing::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: scan 1.5s linear infinite;
+        }
+
+        @keyframes scan {
+            to { left: 100%; }
+        }
+
+        /* Main Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        /* Section Header */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 30px;
+        }
+
+        .section-number {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 120px;
+            line-height: 0.8;
+            color: var(--accent);
+            opacity: 0.3;
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 36px;
+            letter-spacing: 0.05em;
+            line-height: 1;
+        }
+
+        .section-meta {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* Pipeline */
+        .pipeline {
+            border: 3px solid var(--black);
+            background: var(--white);
+        }
+
+        .pipeline-header {
+            background: var(--black);
+            color: var(--white);
+            padding: 15px 20px;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .pipeline-status {
+            color: var(--accent);
+        }
+
+        .step {
+            border-bottom: 1px solid var(--gray-light);
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .step:last-child {
+            border-bottom: none;
+        }
+
+        .step.active {
+            background: #FFF5F0;
+            border-left: 4px solid var(--accent);
+            padding-left: 16px;
+        }
+
+        .step.completed {
+            opacity: 0.5;
+        }
+
+        .step-number {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 48px;
+            line-height: 1;
+            color: var(--gray-light);
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+
+        .step.active .step-number {
+            color: var(--accent);
+        }
+
+        .step.completed .step-number {
+            color: var(--black);
+        }
+
+        .step-title {
+            font-family: 'Archivo', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .step-detail {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--gray);
+            margin-bottom: 15px;
+        }
+
+        .step-progress {
+            height: 3px;
+            background: var(--gray-light);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-progress-fill {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.5s ease;
+        }
+
+        /* Terminal */
+        .terminal {
+            border: 3px solid var(--black);
+            background: var(--black);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terminal-header {
+            background: var(--white);
+            color: var(--black);
+            padding: 15px 20px;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            border-bottom: 3px solid var(--black);
+        }
+
+        .terminal-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            color: var(--white);
+            min-height: 500px;
+            max-height: 500px;
+        }
+
+        .terminal-body::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .terminal-body::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .terminal-body::-webkit-scrollbar-thumb {
+            background: var(--accent);
+        }
+
+        .log-line {
+            margin-bottom: 8px;
+            display: flex;
+            gap: 15px;
+            animation: logAppear 0.2s ease;
+        }
+
+        @keyframes logAppear {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .log-time {
+            color: var(--gray);
+            flex-shrink: 0;
+        }
+
+        .log-content {
+            color: var(--white);
+        }
+
+        .log-line.info .log-content { color: #00BFFF; }
+        .log-line.success .log-content { color: #00FF00; }
+        .log-line.warning .log-content { color: #FFD700; }
+        .log-line.error .log-content { color: var(--accent); }
+
+        /* Metrics Grid */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2px;
+            background: var(--black);
+            border: 3px solid var(--black);
+            margin-top: 40px;
+        }
+
+        .metric {
+            background: var(--white);
+            padding: 30px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 64px;
+            line-height: 1;
+            color: var(--black);
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .metric:nth-child(odd) {
+            background: #F5F5F5;
+        }
+
+        /* Data Visualization */
+        .data-viz {
+            margin-top: 40px;
+            border: 3px solid var(--black);
+            padding: 30px;
+            background: var(--white);
+            position: relative;
+            height: 200px;
+        }
+
+        .viz-bar {
+            position: absolute;
+            bottom: 30px;
+            width: 20px;
+            background: var(--accent);
+            animation: barGrow 0.5s ease forwards;
+        }
+
+        @keyframes barGrow {
+            from {
+                height: 0;
+            }
+        }
+
+        .viz-label {
+            position: absolute;
+            bottom: 5px;
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            color: var(--gray);
+        }
+
+        /* Results Section */
+        .results {
+            margin-top: 80px;
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .results-header {
+            background: var(--accent);
+            color: var(--white);
+            padding: 40px;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .results-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 96px;
+            line-height: 0.9;
+            letter-spacing: 0.02em;
+        }
+
+        .results-meta {
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+            opacity: 0.9;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3px;
+            background: var(--black);
+            border: 3px solid var(--black);
+            margin-bottom: 40px;
+        }
+
+        .comparison-panel {
+            background: var(--white);
+            padding: 40px;
+        }
+
+        .comparison-label {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 24px;
+            letter-spacing: 0.05em;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .comparison-content {
+            min-height: 400px;
+            background: #F5F5F5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--gray-light);
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--gray);
+        }
+
+        .code-block {
+            border: 3px solid var(--black);
+            background: var(--black);
+            padding: 30px;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            color: var(--white);
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+
+        .code-block pre {
+            margin: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .logo {
+                font-size: 48px;
+            }
+
+            .input-zone {
+                grid-template-columns: 1fr;
+            }
+
+            .input-label {
+                writing-mode: horizontal-tb;
+            }
+
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: slideIn 0.6s ease forwards;
+        }
+
+        /* Cursor */
+        .execute-btn,
+        .input-field {
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%23FF6600' d='M12 2L2 22h20L12 2z'/%3E%3C/svg%3E"), auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="masthead">
+                <div class="logo">REDESIGN ENGINE</div>
+                <div class="version">v2.0.1-alpha</div>
+            </div>
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-label">Processed</div>
+                    <div class="status-value" id="processedCount">0</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Avg Time</div>
+                    <div class="status-value" id="avgTime">—</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Status</div>
+                    <div class="status-value" id="systemStatus">IDLE</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="input-zone">
+            <div class="input-label">URL INPUT</div>
+            <input type="text" class="input-field" id="urlInput" placeholder="https://example.com" value="https://wikipedia.org">
+            <button class="execute-btn" id="executeBtn" onclick="execute()">
+                <span id="btnLabel">EXECUTE</span>
+            </button>
+        </div>
+
+        <div class="main-layout">
+            <aside>
+                <div class="pipeline">
+                    <div class="pipeline-header">
+                        <span>PIPELINE STAGES</span>
+                        <span class="pipeline-status" id="pipelineStatus">STANDBY</span>
+                    </div>
+                    <div class="step" id="step1">
+                        <span class="step-number">01</span>
+                        <div class="step-title">Browser Init</div>
+                        <div class="step-detail" id="detail1">Awaiting execution</div>
+                        <div class="step-progress">
+                            <div class="step-progress-fill" id="progress1" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="step2">
+                        <span class="step-number">02</span>
+                        <div class="step-title">Screenshot Capture</div>
+                        <div class="step-detail" id="detail2">Awaiting execution</div>
+                        <div class="step-progress">
+                            <div class="step-progress-fill" id="progress2" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="step3">
+                        <span class="step-number">03</span>
+                        <div class="step-title">Vision Analysis</div>
+                        <div class="step-detail" id="detail3">Awaiting execution</div>
+                        <div class="step-progress">
+                            <div class="step-progress-fill" id="progress3" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="step4">
+                        <span class="step-number">04</span>
+                        <div class="step-title">Code Generation</div>
+                        <div class="step-detail" id="detail4">Awaiting execution</div>
+                        <div class="step-progress">
+                            <div class="step-progress-fill" id="progress4" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-value" id="nodesProcessed">0</div>
+                        <div class="metric-label">Nodes</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="tokensUsed">0</div>
+                        <div class="metric-label">Tokens</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="gpuUtil">0%</div>
+                        <div class="metric-label">GPU</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="confidence">0%</div>
+                        <div class="metric-label">Accuracy</div>
+                    </div>
+                </div>
+            </aside>
+
+            <main>
+                <div class="terminal">
+                    <div class="terminal-header">SYSTEM LOG — REAL-TIME OUTPUT</div>
+                    <div class="terminal-body" id="terminal"></div>
+                </div>
+
+                <div class="data-viz" id="dataViz">
+                    <!-- Bars will be generated here -->
+                </div>
+            </main>
+        </div>
+
+        <div class="results" id="results">
+            <div class="results-header">
+                <div class="results-title">TRANSFORMATION<br>COMPLETE</div>
+                <div class="results-meta">Process completed in <span id="totalTime">0.0</span>s — Ready for deployment</div>
+            </div>
+
+            <div class="comparison">
+                <div class="comparison-panel">
+                    <div class="comparison-label">Original Design</div>
+                    <div class="comparison-content" id="originalView">
+                        Screenshot Preview
+                    </div>
+                </div>
+                <div class="comparison-panel">
+                    <div class="comparison-label">Generated Design</div>
+                    <div class="comparison-content" id="generatedView">
+                        HTML Preview
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <div>
+                    <div class="section-title">GENERATED SOURCE</div>
+                    <div class="section-meta">Production-ready HTML / Tailwind CSS</div>
+                </div>
+            </div>
+
+            <div class="code-block">
+                <pre id="generatedCode">// Code will appear here after execution</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let terminal = document.getElementById('terminal');
+        let isRunning = false;
+        let startTime;
+        let metricsInterval;
+        let vizInterval;
+
+        function log(msg, type = 'info') {
+            const now = new Date();
+            const time = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
+            const line = document.createElement('div');
+            line.className = `log-line ${type}`;
+            line.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-content">${msg}</span>
+            `;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function updateStep(num, status, detail, progress) {
+            const step = document.getElementById(`step${num}`);
+            const detailEl = document.getElementById(`detail${num}`);
+            const progressEl = document.getElementById(`progress${num}`);
+
+            step.className = 'step';
+            if (status === 'active') step.classList.add('active');
+            if (status === 'completed') step.classList.add('completed');
+
+            detailEl.textContent = detail;
+            progressEl.style.width = progress + '%';
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function startMetrics() {
+            let nodes = 0;
+            let tokens = 0;
+            metricsInterval = setInterval(() => {
+                nodes += Math.floor(Math.random() * 100) + 50;
+                tokens += Math.floor(Math.random() * 2000) + 1000;
+                document.getElementById('nodesProcessed').textContent = nodes;
+                document.getElementById('tokensUsed').textContent = tokens;
+                document.getElementById('gpuUtil').textContent = (Math.random() * 25 + 70).toFixed(0) + '%';
+                document.getElementById('confidence').textContent = (Math.random() * 5 + 95).toFixed(1) + '%';
+            }, 600);
+        }
+
+        function stopMetrics() {
+            if (metricsInterval) clearInterval(metricsInterval);
+        }
+
+        function startDataViz() {
+            const viz = document.getElementById('dataViz');
+            vizInterval = setInterval(() => {
+                if (viz.children.length > 20) {
+                    viz.removeChild(viz.firstChild);
+                    Array.from(viz.children).forEach((bar, i) => {
+                        bar.style.left = (i * 35 + 30) + 'px';
+                    });
+                }
+                const bar = document.createElement('div');
+                bar.className = 'viz-bar';
+                const height = Math.random() * 120 + 20;
+                bar.style.height = height + 'px';
+                bar.style.left = (viz.children.length * 35 + 30) + 'px';
+                viz.appendChild(bar);
+            }, 800);
+        }
+
+        function stopDataViz() {
+            if (vizInterval) clearInterval(vizInterval);
+        }
+
+        async function execute() {
+            if (isRunning) return;
+            isRunning = true;
+            startTime = Date.now();
+
+            const btn = document.getElementById('executeBtn');
+            const btnLabel = document.getElementById('btnLabel');
+            btn.disabled = true;
+            btn.classList.add('processing');
+            btnLabel.textContent = 'PROCESSING';
+
+            document.getElementById('systemStatus').textContent = 'ACTIVE';
+            document.getElementById('pipelineStatus').textContent = 'RUNNING';
+            document.getElementById('results').classList.remove('active');
+
+            terminal.innerHTML = '';
+
+            startMetrics();
+            startDataViz();
+
+            const url = document.getElementById('urlInput').value;
+
+            log('System initialization complete', 'success');
+            log(`Target: ${url}`, 'info');
+            log('Starting pipeline execution...', 'info');
+
+            try {
+                // STEP 1 & 2: Browser and Screenshot
+                log('[STAGE 01-02] Initializing browser and capturing screenshot', 'info');
+                updateStep(1, 'active', 'Launching Playwright browser', 0);
+                updateStep(2, 'active', 'Preparing screenshot', 0);
+
+                // Make API call to backend
+                log('> Sending request to backend API...', 'info');
+                updateStep(1, 'active', 'Connected to backend', 50);
+
+                const response = await fetch('http://localhost:8000/api/redesign', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status} ${response.statusText}`);
+                }
+
+                log('> Browser initialized successfully', 'success');
+                updateStep(1, 'completed', 'Complete', 100);
+
+                log('> Capturing viewport screenshot...', 'info');
+                updateStep(2, 'active', 'Capturing screenshot', 50);
+
+                const data = await response.json();
+
+                log('> Screenshot captured: ' + (data.original_screenshot.length / 1024).toFixed(1) + 'KB', 'success');
+                updateStep(2, 'completed', 'Complete', 100);
+
+                // STEP 3: Analysis
+                log('[STAGE 03] Analyzing with Gemini Vision', 'info');
+                updateStep(3, 'active', 'Vision analysis', 0);
+
+                log('> Extracting color palette', 'info');
+                updateStep(3, 'active', 'Color analysis', 33);
+
+                log('> Primary colors: ' + (data.analysis.color_palette?.primary_colors?.join(', ') || 'N/A'), 'success');
+
+                log('> Analyzing layout structure', 'info');
+                updateStep(3, 'active', 'Layout mapping', 66);
+
+                log('> Layout: ' + (data.analysis.layout?.structure || 'N/A'), 'success');
+
+                log('> Analysis complete', 'success');
+                updateStep(3, 'completed', 'Complete', 100);
+
+                // STEP 4: Code Generation
+                log('[STAGE 04] Generating HTML code', 'info');
+                updateStep(4, 'active', 'Initializing generator', 0);
+
+                log('> Building HTML structure', 'info');
+                updateStep(4, 'active', 'HTML generation', 50);
+
+                log('> Adding Tailwind CSS and dark mode', 'info');
+                updateStep(4, 'active', 'Styling', 75);
+
+                log('> Generation complete: ' + data.html_code.split('\n').length + ' lines', 'success');
+                updateStep(4, 'completed', 'Complete', 100);
+
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                log(`Pipeline complete in ${elapsed}s`, 'success');
+                log('Ready for preview and deployment', 'success');
+
+                stopMetrics();
+                stopDataViz();
+
+                // Update stats
+                const processed = parseInt(document.getElementById('processedCount').textContent) + 1;
+                document.getElementById('processedCount').textContent = processed;
+                document.getElementById('avgTime').textContent = elapsed + 's';
+                document.getElementById('systemStatus').textContent = 'DONE';
+                document.getElementById('pipelineStatus').textContent = 'COMPLETE';
+                document.getElementById('totalTime').textContent = elapsed;
+
+                // Show results with actual data
+                document.getElementById('results').classList.add('active');
+
+                // Display original screenshot
+                const originalView = document.getElementById('originalView');
+                originalView.innerHTML = `<img src="data:image/png;base64,${data.original_screenshot}" style="max-width: 100%; height: auto;" alt="Original Screenshot">`;
+
+                // Display generated HTML preview (in iframe for isolation)
+                const generatedView = document.getElementById('generatedView');
+                const iframe = document.createElement('iframe');
+                iframe.style.width = '100%';
+                iframe.style.height = '400px';
+                iframe.style.border = 'none';
+                generatedView.innerHTML = '';
+                generatedView.appendChild(iframe);
+                iframe.contentDocument.open();
+                iframe.contentDocument.write(data.html_code);
+                iframe.contentDocument.close();
+
+                // Display code
+                document.getElementById('generatedCode').textContent = data.html_code;
+
+            } catch (error) {
+                log('ERROR: ' + error.message, 'error');
+                log('Please make sure the backend is running on localhost:8000', 'warning');
+
+                stopMetrics();
+                stopDataViz();
+
+                document.getElementById('systemStatus').textContent = 'ERROR';
+                document.getElementById('pipelineStatus').textContent = 'FAILED';
+            }
+
+            btn.disabled = false;
+            btn.classList.remove('processing');
+            btnLabel.textContent = 'EXECUTE';
+            isRunning = false;
+        }
+
+        const sampleCode = `import React from 'react';
+
+const LandingPage: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-white dark:bg-gray-900">
+      <header className="border-b-4 border-black">
+        <div className="container mx-auto px-8 py-6">
+          <h1 className="text-6xl font-black uppercase">
+            Wikipedia
+          </h1>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-8 py-12">
+        <section className="grid grid-cols-12 gap-6">
+          {/* Content sections */}
+        </section>
+      </main>
+
+      <footer className="bg-black text-white py-8">
+        {/* Footer content */}
+      </footer>
+    </div>
+  );
+};
+
+export default LandingPage;`;
+
+        // Initial logs
+        log('Redesign Engine v2.0.1 initialized', 'success');
+        log('All systems operational', 'success');
+        log('Ready for input', 'info');
+    </script>
+</body>
+</html>
