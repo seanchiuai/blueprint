@@ -25,7 +25,7 @@ class RedesignGenerator:
             if not api_key:
                 raise ValueError("GEMINI_API_KEY environment variable is not set")
             genai.configure(api_key=api_key)
-            self._model = genai.GenerativeModel("gemini-2.0-flash-exp")
+            self._model = genai.GenerativeModel("gemini-3-pro-preview")
 
     def _load_prompt(self, prompt_file: str) -> str:
         """Load prompt from markdown file."""
@@ -90,17 +90,11 @@ Please incorporate these preferences into the redesign. Priority should be given
 - Any additional notes: {style_preferences.get('notes', 'none')}
 """
 
-        # Truncate HTML if too long to avoid token limits (keep first 50k chars)
-        truncated_html = original_html[:50000]
-        if len(original_html) > 50000:
-            truncated_html += "\n<!-- HTML truncated for length -->"
-
         # Replace placeholders in the prompt template
+        # Note: We no longer pass original HTML to avoid confusion - rely on screenshot
         prompt = prompt_template.replace(
             "{ANALYSIS_JSON}", json.dumps(analysis, indent=2)
-        ).replace("{STYLE_PREFERENCES}", style_section).replace(
-            "{ORIGINAL_HTML}", truncated_html
-        )
+        ).replace("{STYLE_PREFERENCES}", style_section)
 
         response = await self._model.generate_content_async(
             [prompt, image],
