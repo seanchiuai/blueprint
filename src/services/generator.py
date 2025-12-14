@@ -53,14 +53,16 @@ class RedesignGenerator:
         self,
         analysis: dict,
         screenshot_b64: str,
+        original_html: str,
         style_preferences: dict | None = None,
     ) -> str:
         """
-        Generate a redesigned HTML page based on analysis and screenshot.
+        Generate a redesigned HTML page based on analysis, screenshot, and original HTML.
 
         Args:
             analysis: Design analysis from DesignAnalyzer
             screenshot_b64: Original screenshot for reference
+            original_html: Original HTML source from the webpage
             style_preferences: Optional user preferences for the redesign
 
         Returns:
@@ -88,15 +90,22 @@ Please incorporate these preferences into the redesign. Priority should be given
 - Any additional notes: {style_preferences.get('notes', 'none')}
 """
 
+        # Truncate HTML if too long to avoid token limits (keep first 50k chars)
+        truncated_html = original_html[:50000]
+        if len(original_html) > 50000:
+            truncated_html += "\n<!-- HTML truncated for length -->"
+
         # Replace placeholders in the prompt template
         prompt = prompt_template.replace(
             "{ANALYSIS_JSON}", json.dumps(analysis, indent=2)
-        ).replace("{STYLE_PREFERENCES}", style_section)
+        ).replace("{STYLE_PREFERENCES}", style_section).replace(
+            "{ORIGINAL_HTML}", truncated_html
+        )
 
         response = await self._model.generate_content_async(
             [prompt, image],
             generation_config=genai.GenerationConfig(
-                temperature=0.7, max_output_tokens=8192
+                temperature=0.7, max_output_tokens=32768
             ),
         )
 

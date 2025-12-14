@@ -7,20 +7,20 @@ from playwright.async_api import async_playwright
 
 
 class ScreenshotService:
-    """Service for capturing website screenshots using local Playwright."""
+    """Service for capturing website screenshots and HTML using local Playwright."""
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
     async def capture_website(self, url: str) -> dict:
         """
-        Capture screenshots using Playwright browser automation.
+        Capture screenshots and HTML using Playwright browser automation.
 
         Args:
             url: The website URL to capture
 
         Returns:
-            dict: Contains 'viewport' and 'full_page' base64 encoded screenshots
+            dict: Contains 'viewport', 'full_page' base64 screenshots, and 'html' source
         """
         self.logger.info(f"Starting screenshot capture for: {url}")
 
@@ -42,6 +42,10 @@ class ScreenshotService:
             # Wait for any lazy-loaded content
             await page.wait_for_timeout(2000)
 
+            # Capture the full HTML content
+            self.logger.info("Capturing HTML content...")
+            html_content = await page.content()
+
             # Capture viewport screenshot (above-the-fold)
             self.logger.info("Capturing viewport screenshot...")
             viewport_screenshot = await page.screenshot(type="png")
@@ -55,10 +59,11 @@ class ScreenshotService:
             await page.close()
             await browser.close()
 
-            self.logger.info("Screenshot capture complete")
+            self.logger.info("Screenshot and HTML capture complete")
             return {
                 "viewport": viewport_b64,
                 "full_page": full_page_b64,
+                "html": html_content,
                 "url": url,
             }
 

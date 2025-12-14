@@ -663,25 +663,6 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="metrics">
-                    <div class="metric">
-                        <div class="metric-value" id="nodesProcessed">0</div>
-                        <div class="metric-label">Nodes</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value" id="tokensUsed">0</div>
-                        <div class="metric-label">Tokens</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value" id="gpuUtil">0%</div>
-                        <div class="metric-label">GPU</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value" id="confidence">0%</div>
-                        <div class="metric-label">Accuracy</div>
-                    </div>
-                </div>
             </aside>
 
             <main>
@@ -722,6 +703,9 @@
                     <div class="section-title">GENERATED SOURCE</div>
                     <div class="section-meta">Production-ready HTML / Tailwind CSS</div>
                 </div>
+                <button id="openHtmlBtn" class="execute-btn" style="padding: 0 30px; font-size: 18px; display: none;" onclick="openGeneratedHtml()">
+                    OPEN IN NEW TAB
+                </button>
             </div>
 
             <div class="code-block">
@@ -734,7 +718,6 @@
         let terminal = document.getElementById('terminal');
         let isRunning = false;
         let startTime;
-        let metricsInterval;
         let vizInterval;
 
         function log(msg, type = 'info') {
@@ -767,22 +750,6 @@
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        function startMetrics() {
-            let nodes = 0;
-            let tokens = 0;
-            metricsInterval = setInterval(() => {
-                nodes += Math.floor(Math.random() * 100) + 50;
-                tokens += Math.floor(Math.random() * 2000) + 1000;
-                document.getElementById('nodesProcessed').textContent = nodes;
-                document.getElementById('tokensUsed').textContent = tokens;
-                document.getElementById('gpuUtil').textContent = (Math.random() * 25 + 70).toFixed(0) + '%';
-                document.getElementById('confidence').textContent = (Math.random() * 5 + 95).toFixed(1) + '%';
-            }, 600);
-        }
-
-        function stopMetrics() {
-            if (metricsInterval) clearInterval(metricsInterval);
-        }
 
         function startDataViz() {
             const viz = document.getElementById('dataViz');
@@ -823,7 +790,6 @@
 
             terminal.innerHTML = '';
 
-            startMetrics();
             startDataViz();
 
             const url = document.getElementById('urlInput').value;
@@ -899,7 +865,6 @@
                 log(`Pipeline complete in ${elapsed}s`, 'success');
                 log('Ready for preview and deployment', 'success');
 
-                stopMetrics();
                 stopDataViz();
 
                 // Update stats
@@ -919,24 +884,59 @@
 
                 // Display generated HTML preview (in iframe for isolation)
                 const generatedView = document.getElementById('generatedView');
-                const iframe = document.createElement('iframe');
-                iframe.style.width = '100%';
-                iframe.style.height = '400px';
-                iframe.style.border = 'none';
-                generatedView.innerHTML = '';
-                generatedView.appendChild(iframe);
-                iframe.contentDocument.open();
-                iframe.contentDocument.write(data.html_code);
-                iframe.contentDocument.close();
 
-                // Display code
-                document.getElementById('generatedCode').textContent = data.html_code;
+                // Defensive validation before display
+                if (!data.html_code || data.html_code.trim().length === 0) {
+                    generatedView.innerHTML = '<div style="color: #FF6600; padding: 20px; font-family: \'Space Mono\', monospace;">ERROR: No HTML code generated</div>';
+                    log('ERROR: Received empty html_code from backend', 'error');
+                } else if (data.html_code.includes('```html') || data.html_code.includes('```HTML') || data.html_code.startsWith('```')) {
+                    generatedView.innerHTML = '<div style="color: #FF6600; padding: 20px; font-family: \'Space Mono\', monospace;">ERROR: HTML code contains markdown markers. Backend extraction failed.<br><br>First 200 chars: ' + data.html_code.substring(0, 200).replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
+                    log('ERROR: html_code contains markdown artifacts: ' + data.html_code.substring(0, 100), 'error');
+                } else if (!data.html_code.toLowerCase().includes('<!doctype') &&
+                           !data.html_code.toLowerCase().includes('<html')) {
+                    generatedView.innerHTML = '<div style="color: orange; padding: 20px; font-family: \'Space Mono\', monospace;">WARNING: HTML may be malformed (missing DOCTYPE or html tag)</div>';
+                    log('WARNING: HTML appears malformed', 'warning');
+                } else {
+                    // HTML looks valid - render it
+                    const iframe = document.createElement('iframe');
+                    iframe.style.width = '100%';
+                    iframe.style.height = '400px';
+                    iframe.style.border = 'none';
+                    generatedView.innerHTML = '';
+                    generatedView.appendChild(iframe);
+
+                    try {
+                        iframe.contentDocument.open();
+                        iframe.contentDocument.write(data.html_code);
+                        iframe.contentDocument.close();
+                        log('HTML preview rendered successfully', 'success');
+                    } catch (error) {
+                        generatedView.innerHTML = '<div style="color: #FF6600; padding: 20px; font-family: \'Space Mono\', monospace;">ERROR: Failed to render HTML: ' + error.message + '</div>';
+                        log('ERROR: Failed to render HTML in iframe: ' + error.message, 'error');
+                    }
+                }
+
+                // Display code with validation
+                const codeDisplay = document.getElementById('generatedCode');
+                if (data.html_code && data.html_code.includes('```')) {
+                    codeDisplay.textContent = '⚠️ WARNING: Code contains markdown markers\n\n' + data.html_code;
+                    codeDisplay.style.color = '#FFD700';
+                } else {
+                    codeDisplay.textContent = data.html_code || '❌ No code generated';
+                    codeDisplay.style.color = '#FAFAFA';
+                }
+
+                // Store generated HTML globally for the open button (only if valid)
+                if (data.html_code && !data.html_code.includes('```')) {
+                    window.generatedHtmlCode = data.html_code;
+                    // Show the "Open in New Tab" button
+                    document.getElementById('openHtmlBtn').style.display = 'inline-block';
+                }
 
             } catch (error) {
                 log('ERROR: ' + error.message, 'error');
                 log('Please make sure the backend is running on localhost:8000', 'warning');
 
-                stopMetrics();
                 stopDataViz();
 
                 document.getElementById('systemStatus').textContent = 'ERROR';
@@ -976,6 +976,24 @@ const LandingPage: React.FC = () => {
 };
 
 export default LandingPage;`;
+
+        // Function to open generated HTML in new tab
+        function openGeneratedHtml() {
+            if (!window.generatedHtmlCode) {
+                alert('No HTML code generated yet!');
+                return;
+            }
+
+            // Create a Blob from the HTML code
+            const blob = new Blob([window.generatedHtmlCode], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+
+            // Open in new tab
+            window.open(url, '_blank');
+
+            // Clean up the URL after a short delay
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
 
         // Initial logs
         log('Redesign Engine v2.0.1 initialized', 'success');

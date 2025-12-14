@@ -78,6 +78,7 @@ class RedesignResponse(BaseModel):
 
     original_url: str
     original_screenshot: str  # base64
+    original_html: str  # source HTML from the webpage
     analysis: dict
     html_code: str
 
@@ -112,10 +113,11 @@ async def redesign_website(request: RedesignRequest):
         analysis = await analyzer.analyze_design(screenshots["viewport"])
 
         # Step 3: Generate redesign
-        logger.info("Generating TSX redesign...")
+        logger.info("Generating HTML redesign...")
         html_code = await generator.generate_redesign(
             analysis=analysis,
             screenshot_b64=screenshots["full_page"],
+            original_html=screenshots["html"],
             style_preferences=request.style_preferences,
         )
 
@@ -124,6 +126,7 @@ async def redesign_website(request: RedesignRequest):
         return RedesignResponse(
             original_url=str(request.url),
             original_screenshot=screenshots["viewport"],
+            original_html=screenshots["html"],
             analysis=analysis,
             html_code=html_code,
         )

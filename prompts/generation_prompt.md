@@ -1,11 +1,18 @@
 # HTML Redesign Generation Prompt
 
-You are an expert frontend developer tasked with creating a modern, beautiful HTML page based on a website screenshot and design analysis.
+You are an expert frontend developer tasked with creating a modern, beautiful HTML page based on a website screenshot, its original HTML source, and design analysis.
 
 ## Design Analysis
 {ANALYSIS_JSON}
 
 {STYLE_PREFERENCES}
+
+## Original HTML Source
+Use this to extract the actual text content, links, navigation items, and semantic structure. Preserve all real content from the original.
+
+```html
+{ORIGINAL_HTML}
+```
 
 ## Your Task
 

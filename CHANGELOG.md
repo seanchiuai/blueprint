@@ -15,8 +15,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Style presets ("minimal", "playful", "corporate")
 - Iterative refinement based on user feedback
 - Export options (Next.js page, standalone HTML, Figma tokens)
-- Download generated HTML button
+- Download generated HTML as file
 - Copy to clipboard for code
+
+---
+
+## [0.3.2] - 2025-12-13
+
+### Added
+- **"Open in New Tab" Button** (`index.html`)
+  - Button appears in results section after successful generation
+  - Opens generated HTML in new browser tab instantly
+  - Uses Blob URL creation for instant preview
+  - Styled with same accent color (#FF6600) as main UI
+  - Located next to "GENERATED SOURCE" section header
+
+### Changed
+- **Results Display** (`index.html`)
+  - Section header now includes action button
+  - Generated HTML stored in `window.generatedHtmlCode` global variable
+  - Button visibility controlled by generation success
+
+### Technical Details
+- Uses `Blob` API to create temporary URL from HTML string
+- `window.open()` with `_blank` target for new tab
+- Automatic URL cleanup with `URL.revokeObjectURL()` after 1 second
+- No file download required - opens directly in browser
+- Works with all generated HTML including dark mode toggle
+
+---
+
+## [0.3.1] - 2025-12-13
+
+### Added
+- **HTML Source Capture** (`src/services/screenshot.py`)
+  - Now captures full HTML source alongside screenshots using Playwright's `page.content()`
+  - Enables content-accurate redesigns by providing original text, links, and structure
+
+- **HTML-Aware Generation** (`src/services/generator.py`)
+  - Generator now receives original HTML as context
+  - HTML is truncated to 50k characters to avoid token limits
+  - Prompt updated to instruct Gemini to preserve real content from original
+
+- **API Response** (`src/api/routes.py`)
+  - New `original_html` field in RedesignResponse
+  - Returns captured HTML source alongside screenshot
+
+### Changed
+- **Generation Prompt** (`prompts/generation_prompt.md`)
+  - Added "Original HTML Source" section with `{ORIGINAL_HTML}` placeholder
+  - Instructs AI to extract actual text content, links, navigation items, and semantic structure
+
+### Technical Details
+- HTML capture adds ~1-2 seconds to pipeline (negligible)
+- HTML truncated at 50k characters to stay within model context limits
+- Full pipeline now: Screenshot + HTML capture → Vision analysis → HTML-aware generation
 
 ---
 
